@@ -25,14 +25,14 @@ class Geeklist_Widget extends WP_Widget {
 			$data = $this->Geeklist_apiCall($instance, "user/links", array("count" => $count));
 			return $data['links'];
 		else:
-			$first_page = $this->Geeklist_apiCall($instance, "user/links", array("count" => 50));
+			$first_page = $this->Geeklist_apiCall($instance, "user/links", array("count" => 50, "page" => 1));
 			$links = (array)$first_page['links'];
 			if($first_page['total_links'] > 50):
 				if($count > $first_page['total_links']):
 					$count = $first_page['total_links'];
 					$page = 2;
 					do {
-						$data = $this->Geeklist_apiCall($instance, "user/links", array("count" => 50));
+						$data = $this->Geeklist_apiCall($instance, "user/links", array("count" => 50, "page" => $page));
 						$links = array_merge($links, $data['links']);
 						$page++;
 					} while(count($links) < $count);
