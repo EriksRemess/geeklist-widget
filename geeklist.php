@@ -19,27 +19,40 @@ class Geeklist_Widget extends WP_Widget {
 		$this->WP_Widget('geeklist-widget', __('Geeklist', 'geeklist'), $widget_ops, $control_ops);
 	}
 	
-	function Geeklist_getLinks($instance){
+	function Geeklist_getList($instance, $listtype){
+		if($listtype == "cards"):
+			$method = "user/cards";
+			$total = "total_cards";
+			$group = "cards";
+		elseif($listtype == "contribs"):
+			$method = "user/contribs";
+			$total = "total_cards";
+			$group = "cards";
+		elseif($listtype == "links"):
+			$method = "user/links";
+			$total = "total_links";
+			$group = "links";
+		endif;
 		$count = (isset($instance['count']) && intval($instance['count']) && $instance['count'] > 0)?$instance['count']:10;
 		if($count <= 50):
-			$data = $this->Geeklist_apiCall($instance, "user/links", array("count" => $count));
-			return $data['links'];
+			$data = $this->Geeklist_apiCall($instance, $method, array("count" => $count));
+			return $data[$group];
 		else:
-			$first_page = $this->Geeklist_apiCall($instance, "user/links", array("count" => 50, "page" => 1));
-			$links = (array)$first_page['links'];
-			if($first_page['total_links'] > 50):
-				if($count > $first_page['total_links']):
-					$count = $first_page['total_links'];
+			$first_page = $this->Geeklist_apiCall($instance, $method, array("count" => 50, "page" => 1));
+			$links = (array)$first_page[$group];
+			if($first_page[$total] > 50):
+				if($count > $first_page[$total]):
+					$count = $first_page[$total];
 					$page = 2;
 					do {
-						$data = $this->Geeklist_apiCall($instance, "user/links", array("count" => 50, "page" => $page));
-						$links = array_merge($links, $data['links']);
+						$data = $this->Geeklist_apiCall($instance, $method, array("count" => 50, "page" => $page));
+						$links = array_merge($links, $data[$group]);
 						$page++;
 					} while(count($links) < $count);
 					$links = array_slice($links, $count);
 				endif;
 			else:
-				$links = $first_page['links'];
+				$links = $first_page[$group];
 			endif;
 			return $links;
 		endif;
@@ -105,17 +118,19 @@ class Geeklist_Widget extends WP_Widget {
 		$instance['oauth_consumer_secret'] = strip_tags($new_instance['oauth_consumer_secret']);
 		$instance['oauth_token'] = strip_tags($new_instance['oauth_token']);
 		$instance['oauth_token_secret'] = strip_tags($new_instance['oauth_token_secret']);
+		$instance['listtype'] = in_array($new_instance['listtype'], array("cards", "contribs", "links"))?$new_instance['listtype']:"links";
 		$instance['count'] = intval($new_instance['count'])?$new_instance['count']:10;
 		return $instance;
 	}
 	
 	function form($instance){
 		$defaults = array(
-			'title' => __('Latest links', 'geeklist'),
+			'title' => __('Latest at Geeklist', 'geeklist'),
 			'oauth_consumer_key' => __('', 'geeklist'),
 			'oauth_consumer_secret' => __('', 'geeklist'),
 			'oauth_token' => __('', 'geeklist'),
-			'oauth_token_secret' => __('', 'geeklist'), 
+			'oauth_token_secret' => __('', 'geeklist'),
+			'listtype' => __('links', 'geeklist'),
 			'count' => 10
 		);
 		$instance = wp_parse_args((array)$instance, $defaults);
@@ -123,6 +138,14 @@ class Geeklist_Widget extends WP_Widget {
 		<p>
 			<label for="<?=$this->get_field_id('title'); ?>"><?php _e('Title:', 'geeklist'); ?></label>
 			<input id="<?=$this->get_field_id('title'); ?>" name="<?=$this->get_field_name('title'); ?>" value="<?=$instance['title']; ?>" class="widefat" />
+		</p>
+		<p>
+			<label for="<?=$this->get_field_id('listtype'); ?>"><?php _e('List type:', 'geeklist'); ?></label>
+			<select name="<?=$this->get_field_name('listtype'); ?>" id="<?=$this->get_field_id('listtype'); ?>">
+				<option value="cards"<?=($instance['listtype']=="cards"?" selected":"");?>>cards</option>
+				<option value="contribs"<?=($instance['listtype']=="contribs"?" selected":"");?>>contributions</option>
+				<option value="links"<?=($instance['listtype']=="links"?" selected":"");?>>links</option>
+			</select>
 		</p>
 		<p>
 			<label for="<?=$this->get_field_id('oauth_consumer_key'); ?>"><?php _e('Consumer key:', 'geeklist'); ?></label>
@@ -150,18 +173,35 @@ class Geeklist_Widget extends WP_Widget {
 	function widget($args, $instance) {
 		extract( $args);
 		$title = apply_filters('widget_title', $instance['title']);
-		$links = $this->Geeklist_getLinks($instance);
-		if(!empty($links)):
-			echo $before_widget;
-			if($title):
-				echo $before_title.$title.$after_title;
+		$instance['listtype'] = in_array($instance['listtype'], array("cards", "contribs", "links"))?$instance['listtype']:"links";
+		if($instance['listtype'] == "links"):
+			$links = $this->Geeklist_getList($instance, "links");
+			if(!empty($links)):
+				echo $before_widget;
+				if($title):
+					echo $before_title.$title.$after_title;
+				endif;
+				echo '<ul class="geeklist">';
+				foreach($links as $link):
+					echo '<li><a href="'.$link['url'].'" title="'.htmlspecialchars($link['description']).'">'.htmlspecialchars($link['title']).'</a></li>';
+				endforeach;
+				echo '</ul>';
+				echo $after_widget;
 			endif;
-			echo '<ul class="geeklist">';
-			foreach($links as $link):
-				echo '<li><a href="'.$link['url'].'" title="'.htmlspecialchars($link['description']).'">'.htmlspecialchars($link['title']).'</a></li>';
-			endforeach;
-			echo '</ul>';
-			echo $after_widget;
+		elseif(in_array($instance['listtype'], array("cards", "contribs"))):
+			$cards = $this->Geeklist_getList($instance, $instance['listtype']);
+			if(!empty($cards)):
+				echo $before_widget;
+				if($title):
+					echo $before_title.$title.$after_title;
+				endif;
+				echo '<ul class="geeklist">';
+				foreach($cards as $card):
+					echo '<li><a href="https://geekli.st'.$card['permalink'].'" title="'.(isset($card['tasks'])?htmlspecialchars("I ".implode(", ", $card['tasks']).(isset($card['skills'])?" using ".implode(", ", $card['skills']):"")):"").'">'.htmlspecialchars($card['headline']).'</a></li>';
+				endforeach;
+				echo '</ul>';
+				echo $after_widget;
+			endif;
 		endif;
 	}
 	
