@@ -1,12 +1,13 @@
 <?php
 /*
 	Plugin Name: Geeklist Widget
-	Plugin URI: https://github.com/EriksRemess/Geeklist-Wordpress-Widget
+	Plugin URI: http://geekli.st/Eriks/i-created-geeklist-wordpress-widget
 	Description: Latest from your Geeklist account in your sidebar
-	Version: 0.2
+	Version: 0.3
 	Author: Eriks Remess
 	Author URI: http://geekli.st/eriks
 */
+
 add_action('widgets_init', 'load_geeklist');
 function load_geeklist() {
 	register_widget('Geeklist_Widget');
@@ -56,6 +57,30 @@ class Geeklist_Widget extends WP_Widget {
 			endif;
 			return $links;
 		endif;
+	}
+	
+	function Geeklist_UserActivities($instance){
+		$user_data = $this->Geeklist_ApiCall($instance, "user");
+		$screen_name = $user_data['screen_name'];
+		$count = (isset($instance['count']) && intval($instance['count']) && $instance['count'] > 0)?$instance['count']:10;
+		if($count <= 50):
+			$activities = $this->Geeklist_ApiCall($instance, "users/".$screen_name."/activity", array("count" => $count));
+		else:
+			$activities = $this->Geeklist_apiCall($instance, "users/".$screen_name."/activity", array("count" => 50, "page" => 1));
+			if(!count($activities) < 50):
+				$page = 2;
+				do {
+					$data = $this->Geeklist_apiCall($instance, "users/".$screen_name."/activity", array("count" => 50, "page" => $page));
+					$activities = array_merge($activities, $data);
+					if(count($data) < 50):
+						break;
+					else:
+						$page++;
+					endif;
+				} while(count($activities) < $count);
+			endif;
+		endif;
+		return $activities;
 	}
 	
 	function Geeklist_ApiCall($instance, $method, $params = array(), $http_method = "GET"){
@@ -118,7 +143,7 @@ class Geeklist_Widget extends WP_Widget {
 		$instance['oauth_consumer_secret'] = strip_tags($new_instance['oauth_consumer_secret']);
 		$instance['oauth_token'] = strip_tags($new_instance['oauth_token']);
 		$instance['oauth_token_secret'] = strip_tags($new_instance['oauth_token_secret']);
-		$instance['listtype'] = in_array($new_instance['listtype'], array("cards", "contribs", "links"))?$new_instance['listtype']:"links";
+		$instance['listtype'] = in_array($new_instance['listtype'], array("cards", "contribs", "links", "useractivity"))?$new_instance['listtype']:"links";
 		$instance['count'] = intval($new_instance['count'])?$new_instance['count']:10;
 		return $instance;
 	}
@@ -145,6 +170,7 @@ class Geeklist_Widget extends WP_Widget {
 				<option value="cards"<?=($instance['listtype']=="cards"?" selected":"");?>>cards</option>
 				<option value="contribs"<?=($instance['listtype']=="contribs"?" selected":"");?>>contributions</option>
 				<option value="links"<?=($instance['listtype']=="links"?" selected":"");?>>links</option>
+				<option value="useractivity"<?=($instance['listtype']=="useractivity"?" selected":"");?>>my activity</option>
 			</select>
 		</p>
 		<p>
@@ -173,7 +199,7 @@ class Geeklist_Widget extends WP_Widget {
 	function widget($args, $instance) {
 		extract( $args);
 		$title = apply_filters('widget_title', $instance['title']);
-		$instance['listtype'] = in_array($instance['listtype'], array("cards", "contribs", "links"))?$instance['listtype']:"links";
+		$instance['listtype'] = in_array($instance['listtype'], array("cards", "contribs", "links", "useractivity"))?$instance['listtype']:"links";
 		if($instance['listtype'] == "links"):
 			$links = $this->Geeklist_getList($instance, "links");
 			if(!empty($links)):
@@ -198,6 +224,51 @@ class Geeklist_Widget extends WP_Widget {
 				echo '<ul class="geeklist">';
 				foreach($cards as $card):
 					echo '<li><a href="https://geekli.st'.$card['permalink'].'" title="'.(isset($card['tasks'])?htmlspecialchars("I ".implode(", ", $card['tasks']).(isset($card['skills'])?" using ".implode(", ", $card['skills']):"")):"").'">'.htmlspecialchars($card['headline']).'</a></li>';
+				endforeach;
+				echo '</ul>';
+				echo $after_widget;
+			endif;
+		elseif($instance['listtype'] == "useractivity"):
+			$activities = $this->Geeklist_UserActivities($instance);
+			if(!empty($activities)):
+				echo $before_widget;
+				if($title):
+					echo $before_title.$title.$after_title;
+				endif;
+				echo '<ul class="geeklist">';
+				foreach($activities as $activity):
+					$activity_time = human_time_diff(strtotime($activity['updated_at']), time());
+					if($activity['type'] == "vote"):
+						echo '<li>I voted on a link <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.$activity['gfk']['title'].'</a> by <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "commit"):
+						echo '<li>I made a commit <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['status']).'</a> to <a href="https://geekli.st'.$activity['gfk']['commit']['repo_url'].'">'.htmlspecialchars($activity['gfk']['commit']['repo']).'</a> ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "highfive"):
+						echo '<li>I high fived a '.$activity['gfk']['type'].' "<a href="https://geekli.st'.$activity['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a>" by <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "link"):
+						echo '<li>I added a new link <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['link']['title']).'</a> ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "follow"):
+						echo '<li>I followed <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "connection"):
+						echo '<li>I connected with <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "card"):
+						if(!isset($activity['subtype'])):
+							echo '<li>I published a card <a href="https://geekli.st/'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a> ['.$activity_time.' ago]</li>';
+						else:
+							if($activity['subtype'] == "info-update"):
+								echo '<li>I updated information on my card <a href="https://geekli.st/'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a> ['.$activity_time.' ago]</li>';
+							elseif($activity['subtype'] == "screenshots-update"):
+								echo '<li>I updated screenshots on my card <a href="https://geekli.st/'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a> ['.$activity_time.' ago]</li>';
+							endif;
+						endif;
+					elseif($activity['type'] == "repo"):
+						$repos = array();
+						foreach($activity['gfk']['repos'] as $repo):
+							$repos[] = '<a href="https://geekli.st'.$repo['permalink'].'">'.htmlspecialchars($repo['name']).'</a>';
+						endforeach;
+						echo '<li>I will publish micro updates from the following Github repos: '.implode(', ', $repos).' ['.$activity_time.' ago]</li>';
+					elseif($activity['type'] == "micro"):
+						echo '<li>I published a micro <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['status']).'</a> ['.$activity_time.' ago]</li>';
+					endif;
 				endforeach;
 				echo '</ul>';
 				echo $after_widget;
