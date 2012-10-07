@@ -1,4 +1,4 @@
-=== Geeklist Wordpress Widget ===
+=== Geeklist Widget ===
 Contributors: EriksRemess, Esemono
 Tags: widgets, links, geeklist
 Requires at least: 3.0

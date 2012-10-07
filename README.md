@@ -1,4 +1,4 @@
-Geeklist Wordpress Widget
+Geeklist Widget
 =============
 
 Wordpress widget that lists your latest Geekli.st activities, cards, contributions and links.
