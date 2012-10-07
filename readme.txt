@@ -3,7 +3,7 @@ Contributors: EriksRemess, Esemono
 Tags: widgets, links, geeklist
 Requires at least: 3.0
 Tested up to: 3.4.2
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 
 Simple sidebar widget that lists your latest Geeklist activities.
 
@@ -28,6 +28,9 @@ Installation as usual.
 7. Enter number of list items you want to see in widget.
 
 == Changelog ==
+
+= 0.3.2 =
+* bugfix
 
 = 0.3.1 =
 * bugfix
