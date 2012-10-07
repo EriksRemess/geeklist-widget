@@ -1,5 +1,5 @@
 === Geeklist Wordpress Widget ===
-Contributors: Esemono
+Contributors: EriksRemess, Esemono
 Tags: widgets, links, geeklist
 Requires at least: 3.0
 Tested up to: 3.4.2
