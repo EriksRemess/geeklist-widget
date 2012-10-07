@@ -48,7 +48,11 @@ class Geeklist_Widget extends WP_Widget {
 					do {
 						$data = $this->Geeklist_apiCall($instance, $method, array("count" => 50, "page" => $page));
 						$links = array_merge($links, $data[$group]);
-						$page++;
+						if(count($data) < 50):
+							break;
+						else:
+							$page++;
+						endif;
 					} while(count($links) < $count);
 					$links = array_slice($links, $count);
 				endif;
@@ -78,6 +82,7 @@ class Geeklist_Widget extends WP_Widget {
 						$page++;
 					endif;
 				} while(count($activities) < $count);
+				$activities = array_slice($activities, $count);
 			endif;
 		endif;
 		return $activities;
