@@ -3,7 +3,7 @@
 	Plugin Name: Geeklist Widget
 	Plugin URI: http://geekli.st/Eriks/i-created-geeklist-wordpress-widget
 	Description: Latest from your Geeklist account in your sidebar
-	Version: 0.3
+	Version: 0.3.2
 	Author: Eriks Remess
 	Author URI: http://geekli.st/eriks
 */
@@ -248,7 +248,7 @@ class Geeklist_Widget extends WP_Widget {
 					elseif($activity['type'] == "commit"):
 						echo '<li>I made a commit <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['status']).'</a> to <a href="https://geekli.st'.$activity['gfk']['commit']['repo_url'].'">'.htmlspecialchars($activity['gfk']['commit']['repo']).'</a> ['.$activity_time.' ago]</li>';
 					elseif($activity['type'] == "highfive"):
-						echo '<li>I high fived a '.$activity['gfk']['type'].' "<a href="https://geekli.st'.$activity['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a>" by <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
+						echo '<li>I high fived a '.$activity['gfk']['type'].' "<a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a>" by <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
 					elseif($activity['type'] == "link"):
 						echo '<li>I added a new link <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['link']['title']).'</a> ['.$activity_time.' ago]</li>';
 					elseif($activity['type'] == "follow"):
