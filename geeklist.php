@@ -3,7 +3,7 @@
 	Plugin Name: Geeklist Widget
 	Plugin URI: http://geekli.st/Eriks/i-created-geeklist-wordpress-widget
 	Description: Latest from your Geeklist account in your sidebar
-	Version: 0.3.2
+	Version: 0.3.3
 	Author: Eriks Remess
 	Author URI: http://geekli.st/eriks
 */
@@ -64,17 +64,15 @@ class Geeklist_Widget extends WP_Widget {
 	}
 	
 	function Geeklist_UserActivities($instance){
-		$user_data = $this->Geeklist_ApiCall($instance, "user");
-		$screen_name = $user_data['screen_name'];
 		$count = (isset($instance['count']) && intval($instance['count']) && $instance['count'] > 0)?$instance['count']:10;
 		if($count <= 50):
-			$activities = $this->Geeklist_ApiCall($instance, "users/".$screen_name."/activity", array("count" => $count));
+			$activities = $this->Geeklist_ApiCall($instance, "user/activity", array("count" => $count));
 		else:
-			$activities = $this->Geeklist_apiCall($instance, "users/".$screen_name."/activity", array("count" => 50, "page" => 1));
+			$activities = $this->Geeklist_apiCall($instance, "user/activity", array("count" => 50, "page" => 1));
 			if(!count($activities) < 50):
 				$page = 2;
 				do {
-					$data = $this->Geeklist_apiCall($instance, "users/".$screen_name."/activity", array("count" => 50, "page" => $page));
+					$data = $this->Geeklist_apiCall($instance, "users/activity", array("count" => 50, "page" => $page));
 					$activities = array_merge($activities, $data);
 					if(count($data) < 50):
 						break;
