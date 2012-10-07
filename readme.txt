@@ -29,6 +29,9 @@ Installation as usual.
 
 == Changelog ==
 
+= 0.3.4 =
+* added to wordpress plugin directory
+
 = 0.3.3 =
 * bugfix
 
