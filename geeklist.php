@@ -1,9 +1,9 @@
 <?php
 /*
 	Plugin Name: Geeklist Widget
-	Plugin URI: http://geekli.st/Eriks/i-created-geeklist-wordpress-widget
+	Plugin URI: http://wordpress.org/extend/plugins/geeklist-widget/
 	Description: Latest from your Geeklist account in your sidebar
-	Version: 0.3.3
+	Version: 0.3.4
 	Author: Eriks Remess
 	Author URI: http://geekli.st/eriks
 */
