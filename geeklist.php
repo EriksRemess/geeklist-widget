@@ -3,7 +3,7 @@
 	Plugin Name: Geeklist Widget
 	Plugin URI: http://wordpress.org/extend/plugins/geeklist-widget/
 	Description: Latest from your Geeklist account in your sidebar
-	Version: 0.3.4
+	Version: 0.4
 	Author: Eriks Remess
 	Author URI: http://geekli.st/eriks
 */
@@ -200,7 +200,7 @@ class Geeklist_Widget extends WP_Widget {
 	}
 	
 	function widget($args, $instance) {
-		extract( $args);
+		extract($args);
 		$title = apply_filters('widget_title', $instance['title']);
 		$instance['listtype'] = in_array($instance['listtype'], array("cards", "contribs", "links", "useractivity"))?$instance['listtype']:"links";
 		if($instance['listtype'] == "links"):
@@ -212,7 +212,7 @@ class Geeklist_Widget extends WP_Widget {
 				endif;
 				echo '<ul class="geeklist">';
 				foreach($links as $link):
-					echo '<li><a href="'.$link['url'].'" title="'.htmlspecialchars($link['description']).'">'.htmlspecialchars($link['title']).'</a></li>';
+					printf(__('<li><a href="%1$s" title="%2$s">%3$s</a></li>'), $link['url'], htmlspecialchars($link['description']), htmlspecialchars($link['title']));
 				endforeach;
 				echo '</ul>';
 				echo $after_widget;
@@ -226,7 +226,13 @@ class Geeklist_Widget extends WP_Widget {
 				endif;
 				echo '<ul class="geeklist">';
 				foreach($cards as $card):
-					echo '<li><a href="https://geekli.st'.$card['permalink'].'" title="'.(isset($card['tasks'])?htmlspecialchars("I ".implode(", ", $card['tasks']).(isset($card['skills'])?" using ".implode(", ", $card['skills']):"")):"").'">'.htmlspecialchars($card['headline']).'</a></li>';
+					printf(
+						__('<li><a href="https://geekli.st%1$s" title="%2$s">%3$s</a>'),
+						$card['permalink'],
+						(isset($card['tasks'])&&(!empty($card['tasks']))?htmlspecialchars(sprintf(__('I %1$s'), implode(", ", $card['tasks'])).
+						(isset($card['skills'])&&(!empty($card['skills']))?sprintf(__(' using %1$s'), implode(", ", $card['skills'])):"")):""),
+						htmlspecialchars($card['headline'])
+					);
 				endforeach;
 				echo '</ul>';
 				echo $after_widget;
@@ -241,37 +247,55 @@ class Geeklist_Widget extends WP_Widget {
 				echo '<ul class="geeklist">';
 				foreach($activities as $activity):
 					$activity_time = human_time_diff(strtotime($activity['updated_at']), time());
-					if($activity['type'] == "vote"):
-						echo '<li>I voted on a link <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.$activity['gfk']['title'].'</a> by <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "commit"):
-						echo '<li>I made a commit <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['status']).'</a> to <a href="https://geekli.st'.$activity['gfk']['commit']['repo_url'].'">'.htmlspecialchars($activity['gfk']['commit']['repo']).'</a> ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "highfive"):
-						echo '<li>I high fived a '.$activity['gfk']['type'].' "<a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a>" by <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "link"):
-						echo '<li>I added a new link <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['link']['title']).'</a> ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "follow"):
-						echo '<li>I followed <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "connection"):
-						echo '<li>I connected with <a href="https://geekli.st/'.$activity['gfk']['screen_name'].'">'.$activity['gfk']['screen_name'].'</a> ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "card"):
-						if(!isset($activity['subtype'])):
-							echo '<li>I published a card <a href="https://geekli.st/'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a> ['.$activity_time.' ago]</li>';
-						else:
-							if($activity['subtype'] == "info-update"):
-								echo '<li>I updated information on my card <a href="https://geekli.st/'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a> ['.$activity_time.' ago]</li>';
-							elseif($activity['subtype'] == "screenshots-update"):
-								echo '<li>I updated screenshots on my card <a href="https://geekli.st/'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['headline']).'</a> ['.$activity_time.' ago]</li>';
+					echo '<li>';
+					switch($activity['type']):
+						case "vote":
+							printf(__('I voted on a link <a href="https://geekli.st%1$s">%2$s</a> by <a href="https://geekli.st/%3$s">%3$s</a>'), $activity['gfk']['permalink'], $activity['gfk']['title'], $activity['gfk']['screen_name']);
+							break;
+						case "commit":
+							printf(__('I made a commit <a href="https://geekli.st%1$s">%2$s</a> to <a href="https://geekli.st/%3$s">%4$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['status']), $activity['gfk']['commit']['repo_url'], htmlspecialchars($activity['gfk']['commit']['repo']));
+							break;
+						case "highfive":
+							printf(__('I high fived a %1$s "<a href="https://geekli.st%2$s">%3$s</a>" by <a href="https://geekli.st/%4$s">%4$s</a>'), $activity['gfk']['type'], $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']), $activity['gfk']['screen_name']);
+							break;
+						case "link":
+							printf(__('I added a new link <a href="https://geekli.st%s">%s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['link']['title']));
+							break;
+						case "follow":
+							printf(__('I followed <a href="https://geekli.st/%1$s">%1$s</a>'), $activity['gfk']['screen_name']);
+							break;
+						case "connection":
+							printf(__('I connected with <a href="https://geekli.st/%1$s">%1$s</a>'), $activity['gfk']['screen_name']);
+							break;
+						case "card":
+							if(!isset($activity['subtype'])):
+								printf(__('I published a card <a href="https://geekli.st%1$s">%2$s</a>', $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline'])));
+							else:
+								if($activity['subtype'] == "info-update"):
+									printf(__('I updated information on my card <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']));
+								elseif($activity['subtype'] == "screenshots-update"):
+									printf(__('I updated screenshots on my card <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']));
+								endif;
 							endif;
-						endif;
-					elseif($activity['type'] == "repo"):
-						$repos = array();
-						foreach($activity['gfk']['repos'] as $repo):
-							$repos[] = '<a href="https://geekli.st'.$repo['permalink'].'">'.htmlspecialchars($repo['name']).'</a>';
-						endforeach;
-						echo '<li>I will publish micro updates from the following Github repos: '.implode(', ', $repos).' ['.$activity_time.' ago]</li>';
-					elseif($activity['type'] == "micro"):
-						echo '<li>I published a micro <a href="https://geekli.st'.$activity['gfk']['permalink'].'">'.htmlspecialchars($activity['gfk']['status']).'</a> ['.$activity_time.' ago]</li>';
-					endif;
+							break;
+						case "repo":
+							$repos = array();
+							foreach($activity['gfk']['repos'] as $repo):
+								$repos[] = '<a href="https://geekli.st'.$repo['permalink'].'">'.htmlspecialchars($repo['name']).'</a>';
+							endforeach;
+							printf(__('I will publish micro updates from the following Github repos: %1$s'), implode(', ', $repos));
+							break;
+						case "micro":
+							printf(__('I published a micro <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['status']));
+							break;
+						case "profile":
+							if($activity['gfk']['headline'] == "featured cards"):
+								printf(__('I changed my featured cards'));
+							endif;
+							break;
+					endswitch;
+					printf(__(' [%1$s ago]'), $activity_time);
+					echo '</li>';
 				endforeach;
 				echo '</ul>';
 				echo $after_widget;
