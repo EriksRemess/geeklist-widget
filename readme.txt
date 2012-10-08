@@ -3,7 +3,7 @@ Contributors: EriksRemess
 Tags: widgets, links, geeklist
 Requires at least: 3.0
 Tested up to: 3.4.2
-Stable tag: 0.3.3
+Stable tag: 0.3.4
 
 Simple sidebar widget that lists your latest Geeklist activities.
 
