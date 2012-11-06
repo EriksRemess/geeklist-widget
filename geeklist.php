@@ -3,7 +3,7 @@
 	Plugin Name: Geeklist Widget
 	Plugin URI: http://wordpress.org/extend/plugins/geeklist-widget/
 	Description: Latest from your Geeklist account in your sidebar
-	Version: 0.4
+	Version: 0.4.1
 	Author: Eriks Remess
 	Author URI: http://geekli.st/eriks
 */
@@ -69,10 +69,10 @@ class Geeklist_Widget extends WP_Widget {
 			$activities = $this->Geeklist_ApiCall($instance, "user/activity", array("count" => $count));
 		else:
 			$activities = $this->Geeklist_apiCall($instance, "user/activity", array("count" => 50, "page" => 1));
-			if(!count($activities) < 50):
+			if(count($activities) < 50 == false):
 				$page = 2;
 				do {
-					$data = $this->Geeklist_apiCall($instance, "users/activity", array("count" => 50, "page" => $page));
+					$data = $this->Geeklist_apiCall($instance, "user/activity", array("count" => 50, "page" => $page));
 					$activities = array_merge($activities, $data);
 					if(count($data) < 50):
 						break;
@@ -80,7 +80,7 @@ class Geeklist_Widget extends WP_Widget {
 						$page++;
 					endif;
 				} while(count($activities) < $count);
-				$activities = array_slice($activities, $count);
+				$activities = array_slice($activities, 0, $count);
 			endif;
 		endif;
 		return $activities;
@@ -269,12 +269,14 @@ class Geeklist_Widget extends WP_Widget {
 							break;
 						case "card":
 							if(!isset($activity['subtype'])):
-								printf(__('I published a card <a href="https://geekli.st%1$s">%2$s</a>', $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline'])));
+								printf(__('I published a card <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']));
 							else:
 								if($activity['subtype'] == "info-update"):
 									printf(__('I updated information on my card <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']));
 								elseif($activity['subtype'] == "screenshots-update"):
 									printf(__('I updated screenshots on my card <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']));
+								elseif($activity['subtype'] == "invite-nm"):
+									printf(__('I invited someone to be a contributor to <a href="https://geekli.st%1$s">%2$s</a>'), $activity['gfk']['permalink'], htmlspecialchars($activity['gfk']['headline']));
 								endif;
 							endif;
 							break;
@@ -291,7 +293,14 @@ class Geeklist_Widget extends WP_Widget {
 						case "profile":
 							if($activity['gfk']['headline'] == "featured cards"):
 								printf(__('I changed my featured cards'));
+							elseif($activity['gfk']['headline'] == "job availability"):
+								printf(__('I changed my job availability status'));
+							else:
+								printf(__('I updated my profile'));
 							endif;
+							break;
+						case "contributor":
+							printf(__('I added <a href="https://geekli.st/%1$s">%1$s</a> as contributor to <a href="https://geekli.st%2$s">%3$s</a>'), $activity['gfk']['screen_name'], $activity['gfk']['card']['permalink'], $activity['gfk']['card']['headline']);
 							break;
 					endswitch;
 					printf(__(' [%1$s ago]'), $activity_time);
